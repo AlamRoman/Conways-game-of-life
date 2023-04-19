@@ -4,7 +4,7 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define width 125
+#define width 75
 #define height 75
 #define UNIT 8
 
