@@ -7,11 +7,17 @@
 #define width 75
 #define height 75
 #define UNIT 8
+#define GENARATION_PER_SECOND 4
+#define TARGET_FPS 60
 
 #define screenWidth 1150
 #define screenHeight 650
 
 int arr[width][height];
+
+bool start = false;
+
+Color nero = {24,28,19,255};
 
 void riempi_arr(){
     int i,j;
@@ -87,35 +93,42 @@ void next_generation(){
     }
 }
 
+void check_pause_start(){
+    if(IsKeyPressed(KEY_SPACE)){
+            start=!start;
+    }
+}
+
 int main(){
     InitWindow(screenWidth,screenHeight,"Game of life");
-    SetTargetFPS(60);
+    SetTargetFPS(TARGET_FPS);
 
     int i,j;
 
     int pos_x_iniziale=50;
     int pos_y_iniziale=25;
 
-    bool start = false;
-
     Rectangle canvas={pos_x_iniziale,pos_y_iniziale,width*UNIT,height*UNIT};
 
-    Color nero = {24,28,19,255};
-
     riempi_arr();
-    int delay=15;
 
     int last_cell_x;
     int last_cell_y;
 
+    int delay = TARGET_FPS / GENARATION_PER_SECOND;
+
     bool vuoto=true;
 
     while(!WindowShouldClose()){
-        delay--;
-        if(start && delay<=0){
-            next_generation();
-            delay=15;
-        }else if(!start){
+
+        if(start){
+            //se delay è uguale a zero allora passa alla prossima generazione
+            if(!delay){
+                next_generation();
+                delay = TARGET_FPS / GENARATION_PER_SECOND;
+            }
+            delay--;
+        }else {
             if(CheckCollisionPointRec(GetMousePosition(),canvas) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
                 int current_cell_x = (int)(GetMouseY()-pos_y_iniziale)/UNIT;
                 int current_cell_y = (int)(GetMouseX()-pos_x_iniziale)/UNIT;
@@ -131,9 +144,7 @@ int main(){
             }
         }
 
-        if(IsKeyPressed(KEY_SPACE)){
-            start=!start;
-        }
+        check_pause_start();
 
         if(IsKeyPressed(KEY_Z) && !vuoto){
             arr[last_cell_x][last_cell_y]=0;
