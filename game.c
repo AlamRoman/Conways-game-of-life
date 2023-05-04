@@ -9,9 +9,21 @@
 #define UNIT 8
 #define GENARATION_PER_SECOND 4
 #define TARGET_FPS 60
+#define MAX_HISTORY 10
+#define MAX_PUNTI_UNDO 100
 
 #define screenWidth 1150
 #define screenHeight 650
+
+typedef struct punti{
+    int x;
+    int y;
+    int ultimoStato;
+}Punti;
+
+Punti history[MAX_HISTORY][MAX_PUNTI_UNDO];
+int history_size_gruppi[MAX_HISTORY];
+int size_history=0;
 
 int arr[width][height];
 
@@ -93,12 +105,6 @@ void next_generation(){
     }
 }
 
-void check_pause_start(){
-    if(IsKeyPressed(KEY_SPACE)){
-            start=!start;
-    }
-}
-
 int main(){
     InitWindow(screenWidth,screenHeight,"Game of life");
     SetTargetFPS(TARGET_FPS);
@@ -112,17 +118,18 @@ int main(){
 
     riempi_arr();
 
-    int last_cell_x;
-    int last_cell_y;
 
     int delay = TARGET_FPS / GENARATION_PER_SECOND;
 
-    bool vuoto=true;
+    //punti
+    Punti *gruppo_punti;
+    int size_gruppo_punti=0;
+    gruppo_punti = (Punti*)malloc(size_gruppo_punti*sizeof(Punti));
 
     while(!WindowShouldClose()){
 
         if(start){
-            //se delay � uguale a zero allora passa alla prossima generazione
+            //se delay è uguale a zero allora passa alla prossima generazione
             if(!delay){
                 next_generation();
                 delay = TARGET_FPS / GENARATION_PER_SECOND;
@@ -130,30 +137,81 @@ int main(){
             delay--;
         }else {
             if(CheckCollisionPointRec(GetMousePosition(),canvas) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
-                int current_cell_x = (int)(GetMouseY()-pos_y_iniziale)/UNIT;
-                int current_cell_y = (int)(GetMouseX()-pos_x_iniziale)/UNIT;
 
-                if (arr[current_cell_x][current_cell_y]!=1)
-                {
-                    last_cell_x=current_cell_x;
-                    last_cell_y=current_cell_y;
+
+                int x = (int)(GetMouseY()-pos_y_iniziale)/UNIT;
+                int y = (int)(GetMouseX()-pos_x_iniziale)/UNIT;
+
+                if(arr[x][y]==0){
+                    size_gruppo_punti++;
+                    gruppo_punti = (Punti*)realloc(gruppo_punti,size_gruppo_punti*sizeof(Punti));
+                    gruppo_punti[size_gruppo_punti-1].x = x;
+                    gruppo_punti[size_gruppo_punti-1].y = y;
+                    gruppo_punti[size_gruppo_punti-1].ultimoStato = arr[x][y];
                 }
 
-                arr[current_cell_x][current_cell_y]=1;
-                vuoto=false;
+                arr[x][y]=1;
             }
         }
 
-        check_pause_start();
+        //aggiunge il gruppo di punti nella history
+        if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(),canvas)){
+            printf("Array creato, size history %d\n",size_history);
+            if(size_gruppo_punti>MAX_PUNTI_UNDO){
+                size_gruppo_punti=MAX_PUNTI_UNDO;
+            }
 
-        if(IsKeyPressed(KEY_Z) && !vuoto){
-            arr[last_cell_x][last_cell_y]=0;
+            for(i=0;i<size_gruppo_punti;i++){
+                history[size_history][i]=gruppo_punti[size_gruppo_punti-i-1];
+            }
+
+            history_size_gruppi[size_history]=size_gruppo_punti;
+
+            //se la lunghezza della history è maggiore al massimo, allora cancello
+            //il primo elemento e faccio il shift dei elementi (FIFO)
+            if(size_history>=MAX_HISTORY-1){
+
+                for(i=0;i<MAX_HISTORY-1;i++){
+                    for(j=0;j<history_size_gruppi[i+1];j++){
+                        history[i][j]=history[i+1][j];
+                    }
+                }
+            }else{
+                size_history++;
+            }
+            size_gruppo_punti=0;
+        }
+
+        if(IsKeyPressed(KEY_SPACE)){
+            start=!start;
+            //se la simulazione è partita, allora non si puo fare undo dei punti disegnati
+            size_history=0;
+        }
+
+        //undo
+        if(IsKeyPressed(KEY_Z)){
+
+            if(size_history<=0){
+                //da modificare e stampare in grafica
+                printf("\nLimite undo raggiunto\n");
+            }
+
+            //modifica l'array con l'ultimo stato dei punti
+            for(i=0;i<history_size_gruppi[size_history-1];i++){
+                arr[history[size_history-1][i].x][history[size_history-1][i].y]=history[size_history-1][i].ultimoStato;
+            }
+
+            if(size_history>0){
+                size_history--;
+            }
+            printf("\nn : %d\n",size_history);
         }
 
         //reset array
         if(IsKeyPressed(KEY_R) && !start){
             riempi_arr();
-            vuoto=true;
+            //reset anche history
+            size_history=0;
         }
 
         BeginDrawing();
