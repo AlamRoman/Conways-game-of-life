@@ -157,11 +157,15 @@ int main(){
         //aggiunge il gruppo di punti nella history
         if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(),canvas)){
             printf("Array creato, size history %d\n",size_history);
+            int n_punti_da_salvare;
             if(size_gruppo_punti>MAX_PUNTI_UNDO){
-                size_gruppo_punti=MAX_PUNTI_UNDO;
+                //da stampare che è stato raggiunto il numero massimo di punti cancellabili
+                n_punti_da_salvare=MAX_PUNTI_UNDO;
+            }else{
+                n_punti_da_salvare=size_gruppo_punti;
             }
 
-            for(i=0;i<size_gruppo_punti;i++){
+            for(i=0;i<n_punti_da_salvare;i++){
                 history[size_history][i]=gruppo_punti[size_gruppo_punti-i-1];
             }
 
