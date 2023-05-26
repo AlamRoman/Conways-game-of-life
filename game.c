@@ -7,12 +7,13 @@
 #define width 75
 #define height 75
 #define UNIT 8
-#define GENARATION_PER_SECOND 4
+#define GENERATION_PER_SECOND 5
 #define TARGET_FPS 60
 #define MAX_HISTORY 10
-#define MAX_PUNTI_UNDO 100
+#define MAX_PUNTI_UNDO 1000
 
 #define screenWidth 1150
+
 #define screenHeight 650
 
 typedef struct punti{
@@ -29,7 +30,7 @@ int arr[width][height];
 
 bool start = false;
 
-Color nero = {24,28,19,255};
+Color coloreNero = {24,28,19,255};
 
 void riempi_arr(){
     int i,j;
@@ -109,17 +110,26 @@ int main(){
     InitWindow(screenWidth,screenHeight,"Game of life");
     SetTargetFPS(TARGET_FPS);
 
+    //set window icon
+    Image icon;
+    icon = LoadImage("img/icon.png");
+    SetWindowIcon(icon);
+
+    Image cursorImage = LoadImage("img/pen_cursor.png");
+    ImageResize(&cursorImage,30,30);
+    Texture cursor = LoadTextureFromImage(cursorImage);
+
     int i,j;
 
     int pos_x_iniziale=50;
     int pos_y_iniziale=25;
 
-    Rectangle canvas={pos_x_iniziale,pos_y_iniziale,width*UNIT,height*UNIT};
+    Rectangle board={pos_x_iniziale,pos_y_iniziale,width*UNIT,height*UNIT};
 
+    //reset array
     riempi_arr();
 
-
-    int delay = TARGET_FPS / GENARATION_PER_SECOND;
+    int frameCount = TARGET_FPS / GENERATION_PER_SECOND;
 
     //punti
     Punti *gruppo_punti;
@@ -129,14 +139,14 @@ int main(){
     while(!WindowShouldClose()){
 
         if(start){
-            //se delay è uguale a zero allora passa alla prossima generazione
-            if(!delay){
+            //se frameCount è uguale a zero allora passa alla prossima generazione
+            if(!frameCount){
                 next_generation();
-                delay = TARGET_FPS / GENARATION_PER_SECOND;
+                frameCount = TARGET_FPS / GENERATION_PER_SECOND;
             }
-            delay--;
+            frameCount--;
         }else {
-            if(CheckCollisionPointRec(GetMousePosition(),canvas) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
+            if(CheckCollisionPointRec(GetMousePosition(),board) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
 
 
                 int x = (int)(GetMouseY()-pos_y_iniziale)/UNIT;
@@ -155,8 +165,8 @@ int main(){
         }
 
         //aggiunge il gruppo di punti nella history
-        if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(),canvas)){
-            printf("Array creato, size history %d\n",size_history);
+        if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(),board)){
+
             int n_punti_da_salvare;
             if(size_gruppo_punti>MAX_PUNTI_UNDO){
                 //da stampare che è stato raggiunto il numero massimo di punti cancellabili
@@ -208,7 +218,7 @@ int main(){
             if(size_history>0){
                 size_history--;
             }
-            printf("\nn : %d\n",size_history);
+
         }
 
         //reset array
@@ -220,26 +230,36 @@ int main(){
 
         BeginDrawing();
             ClearBackground(WHITE);
-            DrawRectangleRec(canvas,RED);
 
             for ( i = 0; i < height; i++)
             {
                 for(j=0;j<width;j++){
+
                     if(arr[i][j]){
                         //live cell
                         DrawRectangle(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,WHITE);
                     }else{
                         //dead cell
                         DrawRectangle(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,BLACK);
-                        DrawRectangleLines(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,nero);
+                        DrawRectangleLines(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,coloreNero);
                     }
 
                 }
             }
-            DrawRectangleLinesEx(canvas,UNIT,GRAY);
+            DrawRectangleLinesEx(board,UNIT,GRAY);
+
+            if(CheckCollisionPointRec(GetMousePosition(),board) && IsCursorOnScreen()){
+                HideCursor();
+                DrawTexture(cursor,GetMouseX(),GetMouseY(),WHITE);
+            }else
+            {
+                ShowCursor();
+            }
 
         EndDrawing();
     }
+
+    UnloadTexture(cursor);
     CloseWindow();
 
     return 0;
