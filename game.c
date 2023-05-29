@@ -4,8 +4,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define width 75
-#define height 75
+#define width_board 75
+#define height_board 75
 #define UNIT 8
 #define GENERATION_PER_SECOND 5
 #define TARGET_FPS 60
@@ -13,7 +13,6 @@
 #define MAX_PUNTI_UNDO 1000
 
 #define screenWidth 1150
-
 #define screenHeight 650
 
 typedef struct punti{
@@ -22,11 +21,13 @@ typedef struct punti{
     int ultimoStato;
 }Punti;
 
+float SCALE_X=1,SCALE_Y=1;
+
 Punti history[MAX_HISTORY][MAX_PUNTI_UNDO];
 int history_size_gruppi[MAX_HISTORY];
 int size_history=0;
 
-int arr[width][height];
+int arr[width_board][height_board];
 
 bool start = false;
 
@@ -35,9 +36,9 @@ Color coloreNero = {24,28,19,255};
 void riempi_arr(){
     int i,j;
 
-    for ( i = 0; i < width; i++)
+    for ( i = 0; i < width_board; i++)
     {
-        for(j=0;j<height;j++){
+        for(j=0;j<height_board;j++){
             arr[i][j]=0;
         }
     }
@@ -76,18 +77,18 @@ int count_neighbours(int i,int j){
 
 void next_generation(){
     int i,j,n;
-    int temp[width][height];
+    int temp[width_board][height_board];
 
-    for ( i = 0; i < width; i++)
+    for ( i = 0; i < width_board; i++)
     {
-        for(j=0;j<height;j++){
+        for(j=0;j<height_board;j++){
             temp[i][j]=arr[i][j];
         }
     }
 
-    for ( i = 1; i < width-1; i++)
+    for ( i = 1; i < width_board-1; i++)
     {
-        for(j=1;j<height-1;j++){
+        for(j=1;j<height_board-1;j++){
             n=count_neighbours(i,j);
             //alive or dead
             if(n<2 || n > 3){
@@ -98,11 +99,33 @@ void next_generation(){
         }
     }
 
-    for ( i = 0; i < width; i++)
+    for ( i = 0; i < width_board; i++)
     {
-        for(j=0;j<height;j++){
+        for(j=0;j<height_board;j++){
             arr[i][j]=temp[i][j];
         }
+    }
+}
+
+void full_screen(){
+
+    if (IsWindowFullscreen())
+    {
+        //window
+        ToggleFullscreen();
+        SetWindowSize(screenWidth,screenHeight);
+
+        SCALE_X=1;
+        SCALE_Y=1;
+    }else
+    {
+        //fullscreen
+        int monitor=GetCurrentMonitor();
+        SetWindowSize(GetMonitorWidth(monitor),GetMonitorHeight(monitor));
+        ToggleFullscreen();
+
+        SCALE_X=1.5;
+        SCALE_Y=1.5;
     }
 }
 
@@ -121,10 +144,10 @@ int main(){
 
     int i,j;
 
-    int pos_x_iniziale=50;
-    int pos_y_iniziale=25;
+    int pos_x_iniziale=(int)GetScreenWidth()*0.05;
+    int pos_y_iniziale=(int)GetScreenHeight()*0.05;
 
-    Rectangle board={pos_x_iniziale,pos_y_iniziale,width*UNIT,height*UNIT};
+    Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
 
     //reset array
     riempi_arr();
@@ -138,6 +161,20 @@ int main(){
 
     while(!WindowShouldClose()){
 
+        //fullscreen
+        if (IsKeyPressed(KEY_F))
+        {
+            full_screen();
+
+            pos_x_iniziale=(int)GetScreenWidth()*0.05;
+            pos_y_iniziale=(int)GetScreenHeight()*0.05;
+
+            board.width=width_board*UNIT*SCALE_X;
+            board.height=height_board*UNIT*SCALE_Y;
+            board.x=pos_x_iniziale;
+            board.y=pos_y_iniziale;
+        }
+
         if(start){
             //se frameCount è uguale a zero allora passa alla prossima generazione
             if(!frameCount){
@@ -149,8 +186,8 @@ int main(){
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
 
 
-                int x = (int)(GetMouseY()-pos_y_iniziale)/UNIT;
-                int y = (int)(GetMouseX()-pos_x_iniziale)/UNIT;
+                int x = (int)(GetMouseY()-pos_y_iniziale)/UNIT/SCALE_X;
+                int y = (int)(GetMouseX()-pos_x_iniziale)/UNIT/SCALE_Y;
 
                 if(arr[x][y]==0){
                     size_gruppo_punti++;
@@ -231,17 +268,17 @@ int main(){
         BeginDrawing();
             ClearBackground(WHITE);
 
-            for ( i = 0; i < height; i++)
+            for ( i = 0; i < height_board; i++)
             {
-                for(j=0;j<width;j++){
+                for(j=0;j<width_board;j++){
 
                     if(arr[i][j]){
                         //live cell
-                        DrawRectangle(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,WHITE);
+                        DrawRectangle(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,WHITE);
                     }else{
                         //dead cell
-                        DrawRectangle(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,BLACK);
-                        DrawRectangleLines(pos_x_iniziale+j*UNIT,pos_y_iniziale+i*UNIT,UNIT,UNIT,coloreNero);
+                        DrawRectangle(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,BLACK);
+                        DrawRectangleLines(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,coloreNero);
                     }
 
                 }
