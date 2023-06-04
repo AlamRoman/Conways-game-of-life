@@ -32,6 +32,7 @@ int arr[width_board][height_board];
 bool start = false;
 
 Color coloreNero = {24,28,19,255};
+Color coloreAzzurro = {203, 245, 237, 255};
 
 void riempi_arr(){
     int i,j;
@@ -124,8 +125,8 @@ void full_screen(){
         SetWindowSize(GetMonitorWidth(monitor),GetMonitorHeight(monitor));
         ToggleFullscreen();
 
-        SCALE_X=1.5;
-        SCALE_Y=1.5;
+        SCALE_X=(float)GetMonitorWidth(monitor)/screenWidth;
+        SCALE_Y=(float)GetMonitorHeight(monitor)/screenHeight;
     }
 }
 
@@ -145,7 +146,7 @@ int main(){
     int i,j;
 
     int pos_x_iniziale=(int)GetScreenWidth()*0.05;
-    int pos_y_iniziale=(int)GetScreenHeight()*0.05;
+    int pos_y_iniziale=(int)GetScreenHeight()*0.04;
 
     Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
 
@@ -167,12 +168,22 @@ int main(){
             full_screen();
 
             pos_x_iniziale=(int)GetScreenWidth()*0.05;
-            pos_y_iniziale=(int)GetScreenHeight()*0.05;
+            pos_y_iniziale=(int)GetScreenHeight()*0.04;
 
             board.width=width_board*UNIT*SCALE_X;
             board.height=height_board*UNIT*SCALE_Y;
             board.x=pos_x_iniziale;
             board.y=pos_y_iniziale;
+
+            if (IsWindowFullscreen())
+            {
+                ImageResize(&cursorImage,30*SCALE_X,30*SCALE_Y);
+                cursor = LoadTextureFromImage(cursorImage);
+            }else
+            {
+                ImageResize(&cursorImage,30,30);
+                cursor = LoadTextureFromImage(cursorImage);
+            }  
         }
 
         if(start){
@@ -266,7 +277,7 @@ int main(){
         }
 
         BeginDrawing();
-            ClearBackground(WHITE);
+            ClearBackground(coloreAzzurro);
 
             for ( i = 0; i < height_board; i++)
             {
@@ -277,17 +288,24 @@ int main(){
                         DrawRectangle(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,WHITE);
                     }else{
                         //dead cell
-                        DrawRectangle(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,BLACK);
+                        DrawRectangle(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,(UNIT+1)*SCALE_X,(UNIT+1)*SCALE_Y,BLACK);
                         DrawRectangleLines(pos_x_iniziale+j*UNIT*SCALE_X,pos_y_iniziale+i*UNIT*SCALE_Y,UNIT*SCALE_X,UNIT*SCALE_Y,coloreNero);
                     }
 
                 }
             }
-            DrawRectangleLinesEx(board,UNIT,GRAY);
+            DrawRectangleLinesEx((Rectangle){pos_x_iniziale,pos_y_iniziale,(width_board*UNIT*SCALE_X)+1,(height_board*UNIT*SCALE_Y)+1},UNIT*((SCALE_X+SCALE_Y)/2),GRAY);
 
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsCursorOnScreen()){
                 HideCursor();
-                DrawTexture(cursor,GetMouseX(),GetMouseY(),WHITE);
+                if (IsWindowFullscreen())
+                {
+                    DrawTexture(cursor,GetMouseX()-UNIT/SCALE_X,GetMouseY()-UNIT/SCALE_Y,WHITE);
+                }else
+                {
+                    DrawTexture(cursor,GetMouseX(),GetMouseY(),WHITE);
+                }
+                
             }else
             {
                 ShowCursor();
