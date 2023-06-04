@@ -141,7 +141,7 @@ int main(){
 
     Image cursorImage = LoadImage("img/pen_cursor.png");
     ImageResize(&cursorImage,30,30);
-    Texture cursor = LoadTextureFromImage(cursorImage);
+    Texture cursor_pen = LoadTextureFromImage(cursorImage);
 
     int i,j;
 
@@ -178,11 +178,11 @@ int main(){
             if (IsWindowFullscreen())
             {
                 ImageResize(&cursorImage,30*SCALE_X,30*SCALE_Y);
-                cursor = LoadTextureFromImage(cursorImage);
+                cursor_pen = LoadTextureFromImage(cursorImage);
             }else
             {
                 ImageResize(&cursorImage,30,30);
-                cursor = LoadTextureFromImage(cursorImage);
+                cursor_pen = LoadTextureFromImage(cursorImage);
             }  
         }
 
@@ -297,24 +297,27 @@ int main(){
             DrawRectangleLinesEx((Rectangle){pos_x_iniziale,pos_y_iniziale,(width_board*UNIT*SCALE_X)+1,(height_board*UNIT*SCALE_Y)+1},UNIT*((SCALE_X+SCALE_Y)/2),GRAY);
 
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsCursorOnScreen()){
+                //hide original cursor
                 HideCursor();
+                //resize pen cursor
                 if (IsWindowFullscreen())
                 {
-                    DrawTexture(cursor,GetMouseX()-UNIT/SCALE_X,GetMouseY()-UNIT/SCALE_Y,WHITE);
+                    DrawTexture(cursor_pen,GetMouseX()-UNIT/SCALE_X,GetMouseY()-UNIT/SCALE_Y,WHITE);
                 }else
                 {
-                    DrawTexture(cursor,GetMouseX(),GetMouseY(),WHITE);
+                    DrawTexture(cursor_pen,GetMouseX(),GetMouseY(),WHITE);
                 }
                 
             }else
             {
+                //show original cursor
                 ShowCursor();
             }
 
         EndDrawing();
     }
 
-    UnloadTexture(cursor);
+    UnloadTexture(cursor_pen);
     CloseWindow();
 
     return 0;
