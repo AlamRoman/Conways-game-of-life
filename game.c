@@ -7,7 +7,7 @@
 #define width_board 75
 #define height_board 75
 #define UNIT 8
-#define GENERATION_PER_SECOND 5
+#define GENERATION_PER_SECOND 7
 #define TARGET_FPS 60
 #define MAX_HISTORY 10
 #define MAX_PUNTI_UNDO 1000
@@ -32,7 +32,7 @@ int arr[width_board][height_board];
 bool start = false;
 
 Color coloreNero = {24,28,19,255};
-Color coloreAzzurro = {203, 245, 237, 255};
+Color coloreBianco = {222, 255, 254, 255};
 
 void riempi_arr(){
     int i,j;
@@ -183,7 +183,7 @@ int main(){
             {
                 ImageResize(&cursorImage,30,30);
                 cursor_pen = LoadTextureFromImage(cursorImage);
-            }  
+            }
         }
 
         if(start){
@@ -195,7 +195,6 @@ int main(){
             frameCount--;
         }else {
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
-
 
                 int x = (int)(GetMouseY()-pos_y_iniziale)/UNIT/SCALE_X;
                 int y = (int)(GetMouseX()-pos_x_iniziale)/UNIT/SCALE_Y;
@@ -234,10 +233,13 @@ int main(){
             if(size_history>=MAX_HISTORY-1){
 
                 for(i=0;i<MAX_HISTORY-1;i++){
-                    for(j=0;j<history_size_gruppi[i+1];j++){
+                    history_size_gruppi[i]=history_size_gruppi[i+1];
+
+                    for(j=0;j<history_size_gruppi[i];j++){
                         history[i][j]=history[i+1][j];
                     }
                 }
+                
             }else{
                 size_history++;
             }
@@ -252,7 +254,7 @@ int main(){
 
         //undo
         if(IsKeyPressed(KEY_Z)){
-
+            
             if(size_history<=0){
                 //da modificare e stampare in grafica
                 printf("\nLimite undo raggiunto\n");
@@ -277,7 +279,7 @@ int main(){
         }
 
         BeginDrawing();
-            ClearBackground(coloreAzzurro);
+            ClearBackground(coloreBianco);
 
             for ( i = 0; i < height_board; i++)
             {
@@ -302,12 +304,12 @@ int main(){
                 //resize pen cursor
                 if (IsWindowFullscreen())
                 {
-                    DrawTexture(cursor_pen,GetMouseX()-UNIT/SCALE_X,GetMouseY()-UNIT/SCALE_Y,WHITE);
+                    DrawTexture(cursor_pen,GetMouseX()-UNIT/(SCALE_X*1.1),GetMouseY()-UNIT/(SCALE_Y*1.1),WHITE);
                 }else
                 {
                     DrawTexture(cursor_pen,GetMouseX(),GetMouseY(),WHITE);
                 }
-                
+
             }else
             {
                 //show original cursor
