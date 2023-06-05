@@ -21,6 +21,17 @@ typedef struct punti{
     int ultimoStato;
 }Punti;
 
+typedef struct button{
+    Image image;
+    Texture texture;
+    int posX;
+    int posY;
+    int sizeX;
+    int sizeY;
+    Rectangle rect;
+    bool isPressed;
+}Button;
+
 float SCALE_X=1,SCALE_Y=1;
 
 Punti history[MAX_HISTORY][MAX_PUNTI_UNDO];
@@ -30,6 +41,9 @@ int size_history=0;
 int arr[width_board][height_board];
 
 bool start = false;
+
+int genaration_count=0;
+int population=0;
 
 Color coloreNero = {24,28,19,255};
 Color coloreBianco = {222, 255, 254, 255};
@@ -80,10 +94,16 @@ void next_generation(){
     int i,j,n;
     int temp[width_board][height_board];
 
+    population=0;
+
     for ( i = 0; i < width_board; i++)
     {
         for(j=0;j<height_board;j++){
             temp[i][j]=arr[i][j];
+
+            if(arr[i][j]==1){
+                population++;
+            }
         }
     }
 
@@ -106,42 +126,57 @@ void next_generation(){
             arr[i][j]=temp[i][j];
         }
     }
+
+    genaration_count++;
 }
 
 void full_screen(){
 
-    if (IsWindowFullscreen())
-    {
-        //window
-        ToggleFullscreen();
-        SetWindowSize(screenWidth,screenHeight);
+    int monitor=GetCurrentMonitor();
+    SetWindowSize(GetMonitorWidth(monitor),GetMonitorHeight(monitor));
+    ToggleFullscreen();
 
-        SCALE_X=1;
-        SCALE_Y=1;
-    }else
-    {
-        //fullscreen
-        int monitor=GetCurrentMonitor();
-        SetWindowSize(GetMonitorWidth(monitor),GetMonitorHeight(monitor));
-        ToggleFullscreen();
-
-        SCALE_X=(float)GetMonitorWidth(monitor)/screenWidth;
-        SCALE_Y=(float)GetMonitorHeight(monitor)/screenHeight;
-    }
+    SCALE_X=(float)GetMonitorWidth(monitor)/screenWidth;
+    SCALE_Y=(float)GetMonitorHeight(monitor)/screenHeight;
 }
 
 int main(){
     InitWindow(screenWidth,screenHeight,"Game of life");
     SetTargetFPS(TARGET_FPS);
 
+    full_screen();
+
     //set window icon
     Image icon;
     icon = LoadImage("img/icon.png");
     SetWindowIcon(icon);
 
+    //load pen cursor texture
     Image cursorImage = LoadImage("img/pen_cursor.png");
-    ImageResize(&cursorImage,30,30);
+    ImageResize(&cursorImage,30*SCALE_X,30*SCALE_Y);
     Texture cursor_pen = LoadTextureFromImage(cursorImage);
+
+    Font font_subway = LoadFontEx("font/SUBWAY.ttf", 96, 0, 0);
+
+    //Buttons
+
+    Button btn_start;
+    btn_start.image = LoadImage("img/start.png");
+    btn_start.sizeX=200;
+    btn_start.sizeY=75;
+    ImageResize(&btn_start.image,btn_start.sizeX,btn_start.sizeY);
+    btn_start.texture = LoadTextureFromImage(btn_start.image);
+    btn_start.posX=GetScreenWidth()*0.75;
+    btn_start.posY=GetScreenHeight()*0.75;
+    btn_start.rect = (Rectangle){btn_start.posX,btn_start.posY,btn_start.sizeX,btn_start.sizeY};
+
+    Image pause_image = LoadImage("img/pause.png");
+    ImageResize(&pause_image,btn_start.sizeX,btn_start.sizeY);
+    Texture pause_texture = LoadTextureFromImage(pause_image);
+
+    Image start_image = LoadImage("img/start.png");
+    ImageResize(&start_image,btn_start.sizeX,btn_start.sizeY);
+    Texture start_texture = LoadTextureFromImage(btn_start.image);
 
     int i,j;
 
@@ -161,30 +196,6 @@ int main(){
     gruppo_punti = (Punti*)malloc(size_gruppo_punti*sizeof(Punti));
 
     while(!WindowShouldClose()){
-
-        //fullscreen
-        if (IsKeyPressed(KEY_F))
-        {
-            full_screen();
-
-            pos_x_iniziale=(int)GetScreenWidth()*0.05;
-            pos_y_iniziale=(int)GetScreenHeight()*0.04;
-
-            board.width=width_board*UNIT*SCALE_X;
-            board.height=height_board*UNIT*SCALE_Y;
-            board.x=pos_x_iniziale;
-            board.y=pos_y_iniziale;
-
-            if (IsWindowFullscreen())
-            {
-                ImageResize(&cursorImage,30*SCALE_X,30*SCALE_Y);
-                cursor_pen = LoadTextureFromImage(cursorImage);
-            }else
-            {
-                ImageResize(&cursorImage,30,30);
-                cursor_pen = LoadTextureFromImage(cursorImage);
-            }
-        }
 
         if(start){
             //se frameCount è uguale a zero allora passa alla prossima generazione
@@ -239,22 +250,31 @@ int main(){
                         history[i][j]=history[i+1][j];
                     }
                 }
-                
+
             }else{
                 size_history++;
             }
             size_gruppo_punti=0;
         }
 
-        if(IsKeyPressed(KEY_SPACE)){
+        btn_start.isPressed = ( CheckCollisionPointRec(GetMousePosition(),btn_start.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) );
+
+        if(IsKeyPressed(KEY_SPACE) || btn_start.isPressed ){
             start=!start;
+
+            if(!start){
+                btn_start.texture = start_texture;
+            }else{
+                btn_start.texture = pause_texture;
+            }
+
             //se la simulazione è partita, allora non si puo fare undo dei punti disegnati
             size_history=0;
         }
 
         //undo
         if(IsKeyPressed(KEY_Z)){
-            
+
             if(size_history<=0){
                 //da modificare e stampare in grafica
                 printf("\nLimite undo raggiunto\n");
@@ -301,14 +321,7 @@ int main(){
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsCursorOnScreen()){
                 //hide original cursor
                 HideCursor();
-                //resize pen cursor
-                if (IsWindowFullscreen())
-                {
-                    DrawTexture(cursor_pen,GetMouseX()-UNIT/(SCALE_X*1.1),GetMouseY()-UNIT/(SCALE_Y*1.1),WHITE);
-                }else
-                {
-                    DrawTexture(cursor_pen,GetMouseX(),GetMouseY(),WHITE);
-                }
+                DrawTexture(cursor_pen,GetMouseX()-UNIT/(SCALE_X*1.1),GetMouseY()-UNIT/(SCALE_Y*1.1),WHITE);
 
             }else
             {
@@ -316,9 +329,14 @@ int main(){
                 ShowCursor();
             }
 
+            DrawTexture(btn_start.texture,btn_start.posX,btn_start.posY,WHITE);
+
+            DrawTextEx(font_subway,TextFormat("GENARATION : %.3d", genaration_count),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.15)},50,2,BLACK);
+
         EndDrawing();
     }
 
+    free(gruppo_punti);
     UnloadTexture(cursor_pen);
     CloseWindow();
 
