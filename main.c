@@ -159,6 +159,8 @@ int main(){
     char error_message[100];
     int error_message_time=0;
 
+    bool show_start_screen=true;
+
     Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
 
     //reset array
@@ -235,7 +237,50 @@ int main(){
     ImageResize(&undo_off_image,btn_undo.sizeX,btn_undo.sizeY);
     Texture undo_off_texture = LoadTextureFromImage(undo_off_image);
 
+    //exit button
+    Button btn_exit;
+    btn_exit.image = LoadImage("img/exit.png");
+    btn_exit.sizeX=125;
+    btn_exit.sizeY=100;
+    ImageResize(&btn_exit.image,btn_exit.sizeX,btn_exit.sizeY);
+    btn_exit.texture = LoadTextureFromImage(btn_exit.image);
+    btn_exit.posX = GetScreenWidth()*0.93;
+    btn_exit.posY = GetScreenHeight()*0.01;
+    btn_exit.rect = (Rectangle){btn_exit.posX,btn_exit.posY,btn_exit.sizeX,btn_exit.sizeY};
+
+    //start screen button
+    Button btn_start_screen;
+    btn_start_screen.image = LoadImage("img/start2.png");
+    btn_start_screen.sizeX=400;
+    btn_start_screen.sizeY=150;
+    ImageResize(&btn_start_screen.image,btn_start_screen.sizeX,btn_start_screen.sizeY);
+    btn_start_screen.texture = LoadTextureFromImage(btn_start_screen.image);
+    btn_start_screen.posX=GetScreenWidth()*0.4;
+    btn_start_screen.posY=GetScreenHeight()*0.45;
+    btn_start_screen.rect = (Rectangle){btn_start_screen.posX,btn_start_screen.posY,btn_start_screen.sizeX,btn_start_screen.sizeY};
+
+    //start screen background image
+    Image bg_image = LoadImage("img/start_screen_bg.png");
+    int monitor=GetCurrentMonitor();
+    ImageResize(&bg_image,GetMonitorWidth(monitor),GetMonitorHeight(monitor));
+    Texture bg = LoadTextureFromImage(bg_image);
+
     while(!WindowShouldClose()){
+
+        if(show_start_screen){
+            //draw start screen
+            BeginDrawing();
+                ClearBackground(WHITE);
+                DrawTexture(bg,0,0,WHITE);
+                DrawTexture(btn_start_screen.texture,btn_start_screen.posX,btn_start_screen.posY,WHITE);
+            EndDrawing();
+
+            if (( CheckCollisionPointRec(GetMousePosition(),btn_start_screen.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ))
+            {
+                show_start_screen=false;
+            }
+            continue;
+        }
 
         frame_count++;
 
@@ -313,6 +358,12 @@ int main(){
             }
             size_gruppo_punti=0;
         }
+
+        if (( CheckCollisionPointRec(GetMousePosition(),btn_exit.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ))
+        {
+            break;
+        }
+        
 
         btn_start.isPressed = ( CheckCollisionPointRec(GetMousePosition(),btn_start.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) );
 
@@ -416,6 +467,8 @@ int main(){
                 DrawTexture(btn_reset.texture,btn_reset.posX,btn_reset.posY,WHITE);
                 DrawTexture(btn_undo.texture,btn_undo.posX,btn_undo.posY,WHITE);
             }
+
+            DrawTexture(btn_exit.texture,btn_exit.posX,btn_exit.posY,WHITE);
 
             //draw counters
             DrawTextEx(font_subway,TextFormat("TIME : %.3d", time_count),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.05)},40,2,BLACK);
