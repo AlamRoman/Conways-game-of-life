@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define width_board 75
 #define height_board 75
@@ -42,6 +43,7 @@ int arr[width_board][height_board];
 
 bool start = false;
 
+int time_count=0;
 int genaration_count=0;
 int population=0;
 
@@ -146,6 +148,29 @@ int main(){
 
     full_screen();
 
+
+    int i,j;
+
+    int pos_x_iniziale=(int)GetScreenWidth()*0.05;
+    int pos_y_iniziale=(int)GetScreenHeight()*0.04;
+
+    int frame_count = 0;
+
+    char error_message[100];
+    int error_message_time=0;
+
+    Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
+
+    //reset array
+    riempi_arr();
+
+    int time_until_next_gen = TARGET_FPS / GENERATION_PER_SECOND;
+
+    //punti
+    Punti *gruppo_punti;
+    int size_gruppo_punti=0;
+    gruppo_punti = (Punti*)malloc(size_gruppo_punti*sizeof(Punti));
+
     //set window icon
     Image icon;
     icon = LoadImage("img/icon.png");
@@ -157,9 +182,11 @@ int main(){
     Texture cursor_pen = LoadTextureFromImage(cursorImage);
 
     Font font_subway = LoadFontEx("font/SUBWAY.ttf", 96, 0, 0);
+    Font font_arcade = LoadFontEx("font/ARCADE.TTF", 96, 0, 0);
 
     //Buttons
 
+    //start button
     Button btn_start;
     btn_start.image = LoadImage("img/start.png");
     btn_start.sizeX=200;
@@ -174,36 +201,56 @@ int main(){
     ImageResize(&pause_image,btn_start.sizeX,btn_start.sizeY);
     Texture pause_texture = LoadTextureFromImage(pause_image);
 
-    Image start_image = LoadImage("img/start.png");
-    ImageResize(&start_image,btn_start.sizeX,btn_start.sizeY);
-    Texture start_texture = LoadTextureFromImage(btn_start.image);
+    Image resume_image = LoadImage("img/resume.png");
+    ImageResize(&resume_image,btn_start.sizeX,btn_start.sizeY);
+    Texture resume_texture = LoadTextureFromImage(resume_image);
 
-    int i,j;
+    //reset button
+    Button btn_reset;
+    btn_reset.image = LoadImage("img/reset.png");
+    btn_reset.sizeX=200;
+    btn_reset.sizeY=75;
+    ImageResize(&btn_reset.image,btn_reset.sizeX,btn_reset.sizeY);
+    btn_reset.texture= LoadTextureFromImage(btn_reset.image);
+    btn_reset.posX= GetScreenWidth()*0.65;
+    btn_reset.posY= GetScreenHeight()*0.6;
+    btn_reset.rect= (Rectangle){btn_reset.posX,btn_reset.posY,btn_reset.sizeX,btn_reset.sizeY};
 
-    int pos_x_iniziale=(int)GetScreenWidth()*0.05;
-    int pos_y_iniziale=(int)GetScreenHeight()*0.04;
+    Image reset_off_image = LoadImage("img/reset_off.png");
+    ImageResize(&reset_off_image,btn_reset.sizeX,btn_reset.sizeY);
+    Texture reset_off_texture = LoadTextureFromImage(reset_off_image);
 
-    Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
+    //undo button
+    Button btn_undo;
+    btn_undo.image = LoadImage("img/undo.png");
+    btn_undo.sizeX=200;
+    btn_undo.sizeY=75;
+    ImageResize(&btn_undo.image,btn_undo.sizeX,btn_undo.sizeY);
+    btn_undo.texture = LoadTextureFromImage(btn_undo.image);
+    btn_undo.posX = GetScreenWidth()*0.85;
+    btn_undo.posY = GetScreenHeight()*0.6;
+    btn_undo.rect = (Rectangle){btn_undo.posX,btn_undo.posY,btn_undo.sizeX,btn_undo.sizeY};
 
-    //reset array
-    riempi_arr();
-
-    int frameCount = TARGET_FPS / GENERATION_PER_SECOND;
-
-    //punti
-    Punti *gruppo_punti;
-    int size_gruppo_punti=0;
-    gruppo_punti = (Punti*)malloc(size_gruppo_punti*sizeof(Punti));
+    Image undo_off_image = LoadImage("img/undo_off.png");
+    ImageResize(&undo_off_image,btn_undo.sizeX,btn_undo.sizeY);
+    Texture undo_off_texture = LoadTextureFromImage(undo_off_image);
 
     while(!WindowShouldClose()){
 
+        frame_count++;
+
         if(start){
-            //se frameCount è uguale a zero allora passa alla prossima generazione
-            if(!frameCount){
+            //se time_until_next_gen e' uguale a zero allora passa alla prossima generazione
+            if(!time_until_next_gen){
                 next_generation();
-                frameCount = TARGET_FPS / GENERATION_PER_SECOND;
+                time_until_next_gen = TARGET_FPS / GENERATION_PER_SECOND;
             }
-            frameCount--;
+            time_until_next_gen--;
+
+            //calcolo tempo passato
+            if(frame_count == TARGET_FPS){
+                time_count++;
+            }
         }else {
             if(CheckCollisionPointRec(GetMousePosition(),board) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
 
@@ -222,12 +269,22 @@ int main(){
             }
         }
 
+        if(frame_count == TARGET_FPS){
+            if(error_message_time>0){
+                error_message_time--;
+            }
+            frame_count = 0;
+        }
+
+        if(error_message_time<=0){
+            strcpy(error_message,"\0");
+        }
+
         //aggiunge il gruppo di punti nella history
         if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(),board)){
 
             int n_punti_da_salvare;
             if(size_gruppo_punti>MAX_PUNTI_UNDO){
-                //da stampare che è stato raggiunto il numero massimo di punti cancellabili
                 n_punti_da_salvare=MAX_PUNTI_UNDO;
             }else{
                 n_punti_da_salvare=size_gruppo_punti;
@@ -239,7 +296,7 @@ int main(){
 
             history_size_gruppi[size_history]=size_gruppo_punti;
 
-            //se la lunghezza della history è maggiore al massimo, allora cancello
+            //se la lunghezza della history e' maggiore al massimo, allora cancello
             //il primo elemento e faccio il shift dei elementi (FIFO)
             if(size_history>=MAX_HISTORY-1){
 
@@ -263,21 +320,32 @@ int main(){
             start=!start;
 
             if(!start){
-                btn_start.texture = start_texture;
+                btn_start.texture = resume_texture;
             }else{
                 btn_start.texture = pause_texture;
             }
 
-            //se la simulazione è partita, allora non si puo fare undo dei punti disegnati
+            //se la simulazione e' partita, allora non si puo fare undo dei punti disegnati
             size_history=0;
+
+            frame_count=0;
         }
 
         //undo
-        if(IsKeyPressed(KEY_Z)){
+        btn_undo.isPressed = ( CheckCollisionPointRec(GetMousePosition(),btn_undo.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) );
+
+        if(IsKeyPressed(KEY_Z) || btn_undo.isPressed){
 
             if(size_history<=0){
-                //da modificare e stampare in grafica
-                printf("\nLimite undo raggiunto\n");
+                strcpy(error_message,"Limite undo raggiunto!\n");
+                error_message_time=5;
+                //printf("\nLimite undo raggiunto\n");
+            }
+
+            if(history_size_gruppi[size_history-1]>MAX_PUNTI_UNDO){
+                //stampa che e' stato raggiunto il numero massimo di punti cancellabili
+                strcpy(error_message,"Massimo numero di punti\ncancellabili raggiunto!\n");
+                error_message_time=5;
             }
 
             //modifica l'array con l'ultimo stato dei punti
@@ -291,11 +359,20 @@ int main(){
 
         }
 
-        //reset array
-        if(IsKeyPressed(KEY_R) && !start){
+        //reset board
+        btn_reset.isPressed = ( CheckCollisionPointRec(GetMousePosition(),btn_reset.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) );
+
+        if( (IsKeyPressed(KEY_R) || btn_reset.isPressed) && !start){
             riempi_arr();
-            //reset anche history
+
+            //reset history
             size_history=0;
+
+            //reset counters
+            time_count=0;
+            genaration_count=0;
+            population=0;
+            frame_count=0;
         }
 
         BeginDrawing();
@@ -331,13 +408,36 @@ int main(){
 
             DrawTexture(btn_start.texture,btn_start.posX,btn_start.posY,WHITE);
 
-            DrawTextEx(font_subway,TextFormat("GENARATION : %.3d", genaration_count),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.15)},50,2,BLACK);
+            //draw reset and undo buttons
+            if(start){
+                DrawTexture(reset_off_texture,btn_reset.posX,btn_reset.posY,WHITE);
+                DrawTexture(undo_off_texture,btn_undo.posX,btn_undo.posY,WHITE);
+            }else{
+                DrawTexture(btn_reset.texture,btn_reset.posX,btn_reset.posY,WHITE);
+                DrawTexture(btn_undo.texture,btn_undo.posX,btn_undo.posY,WHITE);
+            }
+
+            //draw counters
+            DrawTextEx(font_subway,TextFormat("TIME : %.3d", time_count),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.05)},40,2,BLACK);
+            DrawTextEx(font_subway,TextFormat("GENARATION : %.3d", genaration_count),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.12)},40,2,BLACK);
+            DrawTextEx(font_subway,TextFormat("POPULATION : %.3d", population),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.19)},40,2,BLACK);
+
+            DrawTextEx(font_arcade,TextFormat("%s",error_message),(Vector2){(GetScreenWidth()*0.65),(GetScreenHeight()*0.35)},50,2,BLACK);
 
         EndDrawing();
     }
 
     free(gruppo_punti);
+
     UnloadTexture(cursor_pen);
+    UnloadTexture(btn_start.texture);
+    UnloadTexture(pause_texture);
+    UnloadTexture(resume_texture);
+    UnloadTexture(btn_reset.texture);
+    UnloadTexture(reset_off_texture);
+    UnloadTexture(btn_undo.texture);
+    UnloadTexture(undo_off_texture);
+
     CloseWindow();
 
     return 0;
