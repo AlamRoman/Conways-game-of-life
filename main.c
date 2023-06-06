@@ -148,6 +148,10 @@ int main(){
 
     full_screen();
 
+    InitAudioDevice();
+	Music music = LoadMusicStream("music/music.mp3");
+	SetMusicVolume(music, 0.1);
+	PlayMusicStream(music);
 
     int i,j;
 
@@ -267,6 +271,8 @@ int main(){
 
     while(!WindowShouldClose()){
 
+        UpdateMusicStream(music);
+
         if(show_start_screen){
             //draw start screen
             BeginDrawing();
@@ -363,7 +369,7 @@ int main(){
         {
             break;
         }
-        
+
 
         btn_start.isPressed = ( CheckCollisionPointRec(GetMousePosition(),btn_start.rect) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) );
 
@@ -490,6 +496,11 @@ int main(){
     UnloadTexture(reset_off_texture);
     UnloadTexture(btn_undo.texture);
     UnloadTexture(undo_off_texture);
+    UnloadTexture(btn_start_screen.texture);
+    UnloadTexture(btn_exit.texture);
+
+    UnloadMusicStream(music);
+    CloseAudioDevice();
 
     CloseWindow();
 
