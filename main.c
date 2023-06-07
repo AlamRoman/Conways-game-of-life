@@ -166,11 +166,11 @@ int main(){
     bool show_start_screen=true;
 
     Rectangle board={pos_x_iniziale,pos_y_iniziale,width_board*UNIT*SCALE_X,height_board*UNIT*SCALE_Y};
+   
+    int time_until_next_gen = TARGET_FPS / GENERATION_PER_SECOND;
 
     //reset array
     riempi_arr();
-
-    int time_until_next_gen = TARGET_FPS / GENERATION_PER_SECOND;
 
     //punti
     Punti *gruppo_punti;
